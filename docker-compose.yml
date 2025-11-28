@@ -11,11 +11,11 @@ services:
       - --entrypoints.web.address=:80
     ports:
       - "80:80"
-      - "8080:8080"  # Traefik dashboard
+      - "8080:8080"
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
     networks:
-      - traefik-net
+      - app-network
 
   frontend:
     build: ./frontend
@@ -23,11 +23,12 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.frontend.rule=PathPrefix(`/`)"
       - "traefik.http.routers.frontend.entrypoints=web"
-    environment:
-      - AUTH_API_ADDRESS=http://auth-api:8081
-      - TODOS_API_ADDRESS=http://todos-api:8082
     networks:
-      - traefik-net
+      - app-network
+    depends_on:
+      - auth-api
+      - todos-api
+      - users-api
 
   auth-api:
     build: ./auth-api
@@ -40,7 +41,7 @@ services:
       - JWT_SECRET=myfancysecret
       - USERS_API_ADDRESS=http://users-api:8083
     networks:
-      - traefik-net
+      - app-network
 
   todos-api:
     build: ./todos-api
@@ -54,7 +55,7 @@ services:
       - REDIS_PORT=6379
       - REDIS_CHANNEL=log_channel
     networks:
-      - traefik-net
+      - app-network
     depends_on:
       - redis-queue
 
@@ -68,7 +69,7 @@ services:
       - SERVER_PORT=8083
       - JWT_SECRET=myfancysecret
     networks:
-      - traefik-net
+      - app-network
 
   log-processor:
     build: ./log-message-processor
@@ -77,15 +78,15 @@ services:
       - REDIS_PORT=6379
       - REDIS_CHANNEL=log_channel
     networks:
-      - traefik-net
+      - app-network
     depends_on:
       - redis-queue
 
   redis-queue:
     image: redis:alpine
     networks:
-      - traefik-net
+      - app-network
 
 networks:
-  traefik-net:
+  app-network:
     driver: bridge
