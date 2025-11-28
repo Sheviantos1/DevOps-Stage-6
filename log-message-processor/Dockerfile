@@ -1,7 +1,4 @@
-FROM python:3.9-alpine
-
-# Install build dependencies
-RUN apk add --no-cache gcc musl-dev linux-headers
+FROM python:3.7-slim
 
 WORKDIR /app
 COPY requirements.txt .
