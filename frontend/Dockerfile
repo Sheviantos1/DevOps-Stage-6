@@ -1,12 +1,9 @@
-# Build stage with Python for node-gyp
-FROM node:18 as build-stage
-
-# Install Python and build tools
-RUN apt-get update && apt-get install -y python3 make g++
+# Build stage
+FROM node:14-alpine as build-stage
 
 WORKDIR /app
 COPY package*.json ./
-RUN npm install
+RUN npm install --legacy-peer-deps
 COPY . .
 RUN npm run build
 
