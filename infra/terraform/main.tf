@@ -1,6 +1,6 @@
 terraform {
   required_version = ">= 1.0"
-  
+
   required_providers {
     aws = {
       source  = "hashicorp/aws"
@@ -56,12 +56,12 @@ resource "aws_security_group" "todo_app" {
 }
 
 resource "aws_instance" "todo_app" {
-  ami           = "ami-0fc5d935ebf8bc3bc"  # Ubuntu 22.04
+  ami           = "ami-0fc5d935ebf8bc3bc"
   instance_type = "t3.micro"
-  
+
   key_name               = "todo-app-key"
   vpc_security_group_ids = [aws_security_group.todo_app.id]
-  
+
   user_data = <<-EOF
               #!/bin/bash
               apt-get update
