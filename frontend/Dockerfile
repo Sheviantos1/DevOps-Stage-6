@@ -1,5 +1,5 @@
-# Build stage with Node 14 (compatible with Webpack 3)
-FROM node:14-alpine as build-stage
+# Build stage with Node 10 (compatible with Webpack 3)
+FROM node:10-alpine as build-stage
 
 WORKDIR /app
 COPY package*.json ./
