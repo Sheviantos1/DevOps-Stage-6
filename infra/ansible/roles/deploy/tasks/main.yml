@@ -1,13 +1,38 @@
 ---
-- name: Clone or update application repository
+- name: Install git if not present
+  apt:
+    name: git
+    state: present
+  become: true
+
+- name: Check if app directory exists
+  stat:
+    path: /home/ubuntu/app
+  register: app_dir
+
+- name: Check if it's a git repository
+  stat:
+    path: /home/ubuntu/app/.git
+  register: git_dir
+  when: app_dir.stat.exists
+
+- name: Backup existing non-git directory
+  command: mv /home/ubuntu/app /home/ubuntu/app.backup.{{ ansible_date_time.epoch }}
+  when: app_dir.stat.exists and (not git_dir.stat.exists or not git_dir.stat.isdir)
+  become: true
+  ignore_errors: true
+
+- name: Clone application repository
   git:
     repo: "{{ github_repo }}"
     dest: /home/ubuntu/app
     version: main
-    force: yes
+    force: true
+    accept_hostkey: true
   become: true
   become_user: ubuntu
-  register: git_result
+  retries: 3
+  delay: 5
 
 - name: Copy environment file
   template:
@@ -16,6 +41,7 @@
     owner: ubuntu
     group: ubuntu
     mode: '0644'
+  become: true
 
 - name: Create Traefik configuration directory
   file:
@@ -24,16 +50,19 @@
     owner: ubuntu
     group: ubuntu
     mode: '0755'
+  become: true
 
-- name: Copy Traefik configuration
+- name: Copy Traefik configuration files
   template:
     src: "{{ item }}.j2"
     dest: "/home/ubuntu/app/traefik-config/{{ item }}"
     owner: ubuntu
     group: ubuntu
+    mode: '0644'
   loop:
     - traefik.yml
     - config.yml
+  become: true
 
 - name: Create acme.json file
   file:
@@ -42,6 +71,9 @@
     owner: ubuntu
     group: ubuntu
     mode: '0600'
+    modification_time: preserve
+    access_time: preserve
+  become: true
 
 - name: Stop existing containers
   shell: docker compose down
@@ -57,14 +89,21 @@
     chdir: /home/ubuntu/app
   become: true
   become_user: ubuntu
+  async: 600
+  poll: 10
 
-- name: Wait for services to be healthy
+- name: Wait for services to start
+  pause:
+    seconds: 30
+
+- name: Check container status
   shell: docker compose ps
   args:
     chdir: /home/ubuntu/app
-  register: docker_status
-  until: docker_status.rc == 0
-  retries: 5
-  delay: 10
   become: true
   become_user: ubuntu
+  register: container_status
+
+- name: Display container status
+  debug:
+    var: container_status.stdout_lines

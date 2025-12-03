@@ -93,13 +93,16 @@ resource "local_file" "ansible_inventory" {
 resource "null_resource" "run_ansible" {
   triggers = {
     instance_id = aws_instance.app_server.id
+    always_run  = timestamp()
   }
 
   provisioner "local-exec" {
     command = <<-EOT
-      sleep 60
+      sleep 90
       cd ${path.module}/../ansible && \
-      ansible-playbook -i inventory/hosts playbook.yml
+      ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook \
+        -i inventory/hosts playbook.yml \
+        --extra-vars "github_repo=https://github.com/Sheviantos1/DevOps-Stage-6.git domain=shevytodonew.mooo.com email=s.ademoye16@gmail.com"
     EOT
   }
 
