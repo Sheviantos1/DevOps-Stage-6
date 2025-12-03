@@ -1,0 +1,70 @@
+---
+- name: Clone or update application repository
+  git:
+    repo: "{{ github_repo }}"
+    dest: /home/ubuntu/app
+    version: main
+    force: yes
+  become: true
+  become_user: ubuntu
+  register: git_result
+
+- name: Copy environment file
+  template:
+    src: env.j2
+    dest: /home/ubuntu/app/.env
+    owner: ubuntu
+    group: ubuntu
+    mode: '0644'
+
+- name: Create Traefik configuration directory
+  file:
+    path: /home/ubuntu/app/traefik-config
+    state: directory
+    owner: ubuntu
+    group: ubuntu
+    mode: '0755'
+
+- name: Copy Traefik configuration
+  template:
+    src: "{{ item }}.j2"
+    dest: "/home/ubuntu/app/traefik-config/{{ item }}"
+    owner: ubuntu
+    group: ubuntu
+  loop:
+    - traefik.yml
+    - config.yml
+
+- name: Create acme.json file
+  file:
+    path: /home/ubuntu/app/traefik-config/acme.json
+    state: touch
+    owner: ubuntu
+    group: ubuntu
+    mode: '0600'
+
+- name: Stop existing containers
+  shell: docker compose down
+  args:
+    chdir: /home/ubuntu/app
+  become: true
+  become_user: ubuntu
+  ignore_errors: true
+
+- name: Build and start services
+  shell: docker compose up -d --build
+  args:
+    chdir: /home/ubuntu/app
+  become: true
+  become_user: ubuntu
+
+- name: Wait for services to be healthy
+  shell: docker compose ps
+  args:
+    chdir: /home/ubuntu/app
+  register: docker_status
+  until: docker_status.rc == 0
+  retries: 5
+  delay: 10
+  become: true
+  become_user: ubuntu

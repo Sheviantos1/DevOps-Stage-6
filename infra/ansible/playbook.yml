@@ -1,0 +1,8 @@
+---
+- name: Deploy DevOps Stage 6 Application
+  hosts: app_servers
+  become: yes
+  
+  roles:
+    - dependencies
+    - deploy

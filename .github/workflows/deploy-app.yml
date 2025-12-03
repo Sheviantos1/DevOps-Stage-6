@@ -1,0 +1,67 @@
+name: Application Deployment
+
+on:
+  push:
+    paths:
+      - 'auth-api/**'
+      - 'frontend/**'
+      - 'todos-api/**'
+      - 'users-api/**'
+      - 'log-message-processor/**'
+      - 'docker-compose.yml'
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy Application
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Setup Ansible
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ansible
+
+      - name: Deploy with Ansible
+        working-directory: infra/ansible
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: False
+        run: |
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > private_key.pem
+          chmod 600 private_key.pem
+          ansible-playbook -i inventory/hosts playbook.yml \
+            --private-key=private_key.pem \
+            --extra-vars "github_repo=${{ github.server_url }}/${{ github.repository }}.git"
+
+      - name: Cleanup
+        if: always()
+        run: rm -f infra/ansible/private_key.pem
+```
+
+---
+
+## 🔐 Phase 6: GitHub Secrets Configuration
+
+### Step 9: Add Required Secrets
+
+Go to **GitHub Repository → Settings → Secrets and variables → Actions** and add:
+```
+AWS_ACCESS_KEY_ID=<your-aws-access-key>
+AWS_SECRET_ACCESS_KEY=<your-aws-secret-key>
+SSH_PRIVATE_KEY=<your-ssh-private-key-content>
+MAIL_USERNAME=<gmail-address>
+MAIL_PASSWORD=<gmail-app-password>
+NOTIFICATION_EMAIL=<your-email>
+CLOUDFLARE_API_TOKEN=<cloudflare-token>

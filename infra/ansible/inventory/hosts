@@ -1,0 +1,2 @@
+[app_servers]
+app_server ansible_host=34.204.181.216 ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/devops_stage6_key.pem ansible_ssh_common_args='-o StrictHostKeyChecking=no'

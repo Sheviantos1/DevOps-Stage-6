@@ -1,0 +1,6 @@
+aws_region    = "us-east-1"
+instance_type = "t3.medium"
+key_name      = "devops_stage6_key"
+domain        = "shevytodonew.mooo.com"
+email         = "s.ademoye16@gmail.com"
+github_repo   = "https://github.com/Sheviantos1/DevOps-Stage-6.git"
